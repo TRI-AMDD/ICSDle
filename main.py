@@ -1,6 +1,7 @@
 from pymatgen.core import Composition
 import random
 from data import get_data
+from datetime import datetime
 
 
 def check_formula(guess, answer):
@@ -29,9 +30,9 @@ def check_formula(guess, answer):
     return response
 
 
-COLORS = {"correct": 42,
-          "group": 43,
-          "row": 45,
+COLORS = {"correct": "30;42",
+          "group": "30;43",
+          "row": "30;45",
           "nothing": 0
           }
 
@@ -41,23 +42,47 @@ def format_response(response, colors=COLORS):
     for r in response:
         string += "\x1b[{}m".format(colors[r[1]])
         string += r[0]
+    string += "\x1b[m"
     return string
 
 
-def run_game(turns=10):
+def run_game(answer="random"):
     formulas = get_data()
-    answer = random.choice(formulas)
-    for n in range(turns):
+    if isinstance(answer, int):
+        answer = formulas[answer]
+    elif answer == "daily":
+        random.seed(int(datetime.utcnow().strftime("%Y%m%d")))
+        answer = random.choice(formulas)
+    elif answer == "random":
+        answer = random.choice(formulas)
+    else:
+        raise ValueError("{} is not a valid answer mode".format(answer))
+    print("\x1b[{}mcorrect element\x1b[m, \x1b[{}mcorrect group\x1b[m, \x1b[{}mcorrect row\x1b[m".format(
+        COLORS['correct'], COLORS['group'], COLORS['row']
+    ))
+    solved = False
+    turns = 0
+    while not solved:
         guess = input("Enter formula:")
-        if Composition(guess).reduced_formula not in formulas:
+        if guess == "exit":
+            break
+        try:
+            comp = Composition(guess)
+        except:
+            print("Composition {} not valid".format(guess))
+            continue
+        if comp.reduced_formula not in formulas:
             print("{} not in ICSD formulas".format(guess))
         else:
             response = check_formula(guess, answer)
             print(format_response(response))
+            turns += 1
             if all([r[1] == "correct" for r in response]):
-                print("Solved on turn {}".format(n+1))
-                break
+                print("Solved on turn {}".format(turns))
+                solved = True
+    if not solved:
+        print("Answer: {}".format(answer))
 
 
 if __name__ == "__main__":
-    run_game()
+    run_game(answer="daily")
