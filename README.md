@@ -1,5 +1,5 @@
 # ICSDle
-A Wordle-like game for identifying ICSD compounds
+A lazily implemented Wordle-like game for identifying ICSD compounds
 
 Usage:
 ```bash
