@@ -4,10 +4,16 @@ from data import get_data
 from datetime import datetime
 
 
-def check_formula(guess, answer):
+CARDINALITIES = ["unary", "binary", "ternary", "quaternary", "quinary", "hexanary", "heptanary"]
+def check_formula(guess, answer, cardinality=True):
     gcomp = Composition(Composition(guess).reduced_formula)
     acomp = Composition(Composition(answer).reduced_formula)
     response = []
+    if cardinality:
+        gcardinality = CARDINALITIES[len(gcomp)-1]
+        gcardinality += '\x1b[m:'
+        label = "correct" if len(gcomp) == len(acomp) else "nothing"
+        response.append([gcardinality, label])
     acomp_groups = [e.group for e in acomp]
     acomp_rows = [e.row for e in acomp]
     for elt in gcomp:
@@ -22,7 +28,7 @@ def check_formula(guess, answer):
         else:
             if elt.group in acomp_groups:
                 response += [[str(elt), "group"]]
-            elif elt.group in acomp_rows:
+            elif elt.row in acomp_rows:
                 response += [[str(elt), "row"]]
             else:
                 response += [[str(elt), "nothing"]]
@@ -36,6 +42,12 @@ COLORS = {"correct": "30;42",
           "nothing": 0
           }
 
+EMOJIS = {"correct": "\U0001f7e9",
+          "group": "\U0001f7e8",
+          "row": "\U0001f7ea",
+          "nothing": "\U0001f533"
+          }
+
 
 def format_response(response, colors=COLORS):
     string = ""
@@ -44,6 +56,10 @@ def format_response(response, colors=COLORS):
         string += r[0]
     string += "\x1b[m"
     return string
+
+
+def format_response_emojis(response, emojis=EMOJIS):
+    return "".join([emojis[r[1]] for r in response])
 
 
 def run_game(answer="random"):
@@ -62,6 +78,7 @@ def run_game(answer="random"):
     ))
     solved = False
     turns = 0
+    all_responses = []
     while not solved:
         guess = input("Enter formula:")
         if guess == "exit":
@@ -75,13 +92,18 @@ def run_game(answer="random"):
             print("{} not in ICSD formulas".format(guess))
         else:
             response = check_formula(guess, answer)
+            all_responses.append(response)
             print(format_response(response))
             turns += 1
-            if all([r[1] == "correct" for r in response]):
+            if comp == Composition(answer):
                 print("Solved on turn {}".format(turns))
                 solved = True
     if not solved:
         print("Answer: {}".format(answer))
+    else:
+        print("\n".join(
+            [format_response_emojis(response)
+             for response in all_responses]))
 
 
 if __name__ == "__main__":
